@@ -4,7 +4,7 @@ struct vec3
 
     x::Float32
     y::Float32
-    z::Float64
+    z::Float32
 
 end
 
