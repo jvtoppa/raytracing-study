@@ -1,11 +1,13 @@
 module HittableList
 using ..CoreVec3: vec3, point3, dot
 using ..CoreRay: ray
-using ..Hittable: hit_record, hittable
+using ..Hittable: hit_record, HittableAbstract
+
+export hit, hittable_list
 
 Base.@kwdef mutable struct hittable_list <: HittableAbstract
 
-    objects::Vector{hit_record} = Vector{hit_record}()
+    objects::Vector{HittableAbstract} = Vector{HittableAbstract}()
 
 end
 

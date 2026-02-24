@@ -12,8 +12,8 @@ function main()
         camera_center = RayTracer.vec3(0.0f0, 0.0f0, 0.0f0),
         image_name = "image.ppm"
     )
-    
-    framebuffer = RayTracer.render_image(camera)
+    world::RayTracer.Sphere.sphere = RayTracer.Sphere.sphere(RayTracer.vec3(0,0,0), 1)
+    framebuffer = RayTracer.render_image(camera, world)
     RayTracer.write_file(camera, framebuffer)
     println("\nDone!")
 end

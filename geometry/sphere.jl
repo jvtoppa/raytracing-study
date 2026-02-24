@@ -2,11 +2,11 @@ module Sphere
 
 using ..CoreVec3: vec3, point3, dot, -, /, sqrt
 using ..CoreRay: ray, at
-using ..Hittable: hit_record, set_face_normal!, hittable
+using ..Hittable: hit_record, set_face_normal!, HittableAbstract
 
 export hit, sphere
 
-Base.@kwdef struct sphere <: HittableAnstract
+Base.@kwdef struct sphere <: HittableAbstract
     
     center::point3
     rad::Float32

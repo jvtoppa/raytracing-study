@@ -2,7 +2,7 @@ module Hittable
 using ..CoreVec3: vec3, point3, dot
 using ..CoreRay: ray
 
-export hit_record, set_face_normal!, push!, hittable
+export hit_record, set_face_normal!, push!, HittableAbstract
 
 abstract type HittableAbstract end
 

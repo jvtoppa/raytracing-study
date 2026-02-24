@@ -13,12 +13,16 @@ include("core/io.jl")
 include("renderer/kernel.jl")
 include("renderer/render.jl")
 
+include("geometry/hittable_list.jl")
+
 using .CoreVec3: vec3, point3, color
 using .CoreRay: ray
 using .Camera: RayCamera, setup_camera
 using .Render: render_image
 using .CoreIO: write_file
-
+using .Sphere: sphere
+using .Hittable: HittableAbstract
+using .HittableList: hittable_list
 const VERSION = v"0.1.0"
 
 

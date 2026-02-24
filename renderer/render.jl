@@ -1,15 +1,17 @@
 module Render
 
 using CUDA
-using ..CoreVec3: vec3, color
+using ..CoreVec3: vec3, color, point3
 using ..Camera: RayCamera, get_pixel_center
 using ..Kernel: render_kernel!
+using ..Hittable: HittableAbstract
+using ..Sphere: sphere
 
-function precompile_kernel!(camera::RayCamera)  
+function precompile_kernel!(camera::RayCamera, dummy::HittableAbstract)  
     precompile_buf = CuArray{vec3}(undef, 1)
     @cuda threads=(32,16) blocks=(1,1) render_kernel!(
         precompile_buf, Int32(1), Int32(1), 
-        camera.pixel00_loc, camera.pixel_delta_u, camera.pixel_delta_v, camera.center
+        camera.pixel00_loc, camera.pixel_delta_u, camera.pixel_delta_v, camera.center, dummy
     )
     CUDA.synchronize()
     precompile_buf = nothing
@@ -17,7 +19,7 @@ function precompile_kernel!(camera::RayCamera)
     
 end
 
-function render_image(camera::RayCamera, threads_x::Int32 = Int32(32), threads_y::Int32 = Int32(16), verbose::Bool = true)
+function render_image(camera::RayCamera, world::HittableAbstract, threads_x::Int32 = Int32(32), threads_y::Int32 = Int32(16), verbose::Bool = true)
     if verbose
         println("Starting render...")
     end
@@ -27,12 +29,13 @@ function render_image(camera::RayCamera, threads_x::Int32 = Int32(32), threads_y
     blocks_x = Int32(cld(camera.image_width, threads_x))
     blocks_y = Int32(cld(camera.image_height, threads_y))
     blocks = (blocks_x, blocks_y)
-    precompile_kernel!(camera)
+    dummy::sphere = sphere(point3(0,0,0), 1.0f0)
+    precompile_kernel!(camera, dummy)
     t_kernel = time()
 
     @cuda threads=threads blocks=blocks render_kernel!(
         framebuf, camera.image_width, camera.image_height, 
-        camera.pixel00_loc, camera.pixel_delta_u, camera.pixel_delta_v, camera.center
+        camera.pixel00_loc, camera.pixel_delta_u, camera.pixel_delta_v, camera.center, world
     )
     CUDA.synchronize()
     kernel_time = time() - t_kernel
