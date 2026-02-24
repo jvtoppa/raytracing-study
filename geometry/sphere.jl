@@ -2,15 +2,23 @@ module Sphere
 
 using ..CoreVec3: vec3, point3, dot, -, /, sqrt
 using ..CoreRay: ray, at
-using ..Hittable: hittable_object, set_face_normal!
+using ..Hittable: hit_record, set_face_normal!, hittable
 
-export hit_sphere
+export hit, sphere
 
-@inline function hit_sphere(center::vec3, rad::Float32, r::ray, ray_tmin, ray_tmax, hto::hittable_object)
-    oc = center - r.origin
+Base.@kwdef struct sphere <: HittableAnstract
+    
+    center::point3
+    rad::Float32
+
+end
+
+
+@inline function hit(obj::sphere, r::ray, ray_tmin, ray_tmax, hto::hit_record)
+    oc = obj.center - r.origin
     a = dot(r.direction, r.direction)
     half_b = dot(r.direction, oc)
-    c = dot(oc, oc) - rad*rad
+    c = dot(oc, oc) - obj.rad*obj.rad
     
     discriminant = half_b*half_b - a*c
     
@@ -18,16 +26,17 @@ export hit_sphere
         return false
     end
     sqrtdiscriminant = sqrt(discriminant)
-    root = (half_b - sqrtdiscriminant) / a
+    root = (-half_b - sqrtdiscriminant) / a
     if root <= ray_tmin || ray_tmax <= root
-        root = (half_b + sqrtdiscriminant) / a
+        root = (-half_b + sqrtdiscriminant) / a
         if root <= ray_tmin || ray_tmax <= root
             return false
         end
     end
     hto.t = root
     hto.point = at(root, r)
-    hto.normal = (hto.point - center) / rad
+    hto.normal = (hto.point - obj.center) / obj.rad
+    set_face_normal!(r, hto.normal, hto)
     return true
 end
 

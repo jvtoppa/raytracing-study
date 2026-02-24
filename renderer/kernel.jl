@@ -1,16 +1,17 @@
 module Kernel
 
 using CUDA
-using ..CoreVec3: vec3, color, unit_vector, +, -, *, /
+using ..CoreVec3: vec3, color, unit_vector, +, -, *, /, point3
 using ..CoreRay: ray
-using ..Sphere: hit_sphere
-using ..Hittable: hittable_object
+using ..Sphere: hit, sphere
+using ..Hittable: hit_record
 
 @inline function ray_color(r::ray)
-    hto = hittable_object()
-    hit = hit_sphere(vec3(0f0, 0f0, -1f0), 0.5f0, r, 0f0, 1f0, hto)
+    s = sphere(point3(0f0, 0f0, -1f0), 0.5f0)
+    hto = hit_record()
+    ht = hit(s, r, 0f0, 1f0, hto)
     
-    if hit
+    if ht
         return 0.5f0 * vec3(hto.normal.x + 1f0, hto.normal.y + 1f0, hto.normal.z + 1f0)
     end
     

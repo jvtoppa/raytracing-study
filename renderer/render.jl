@@ -17,15 +17,17 @@ function precompile_kernel!(camera::RayCamera)
     
 end
 
-function render_image(camera::RayCamera, threads_x::Int32 = Int32(32), threads_y::Int32 = Int32(16))
-    println("Starting render...")
+function render_image(camera::RayCamera, threads_x::Int32 = Int32(32), threads_y::Int32 = Int32(16), verbose::Bool = true)
+    if verbose
+        println("Starting render...")
+    end
     framebuf = CuArray{vec3}(undef, Int(camera.image_height * camera.image_width))
 
     threads = (Int32(threads_x), Int32(threads_y))
     blocks_x = Int32(cld(camera.image_width, threads_x))
     blocks_y = Int32(cld(camera.image_height, threads_y))
     blocks = (blocks_x, blocks_y)
-    
+    precompile_kernel!(camera)
     t_kernel = time()
 
     @cuda threads=threads blocks=blocks render_kernel!(
@@ -34,7 +36,10 @@ function render_image(camera::RayCamera, threads_x::Int32 = Int32(32), threads_y
     )
     CUDA.synchronize()
     kernel_time = time() - t_kernel
-    println("Kernel execution: $(round(kernel_time * 1000, digits=2)) ms")
+    
+    if verbose
+        println("Kernel execution: $(round(kernel_time * 1000, digits=2)) ms")
+    end
     framebuf_cpu = Array(framebuf)
 
     return framebuf_cpu
