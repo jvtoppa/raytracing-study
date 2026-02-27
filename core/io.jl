@@ -3,6 +3,7 @@ module CoreIO
 using ..CoreVec3: color
 using ..Camera: RayCamera
 export write_file
+
 @inline function write_color(io::IO, pixel_color::color)
     r = pixel_color.x
     g = pixel_color.y

@@ -5,6 +5,7 @@ include("core/ray.jl")
 
 include("geometry/hittable.jl")
 include("geometry/sphere.jl")
+include("geometry/hittable_list.jl")
 
 include("camera/camera.jl")
 
@@ -13,7 +14,6 @@ include("core/io.jl")
 include("renderer/kernel.jl")
 include("renderer/render.jl")
 
-include("geometry/hittable_list.jl")
 
 using .CoreVec3: vec3, point3, color
 using .CoreRay: ray
@@ -22,7 +22,7 @@ using .Render: render_image
 using .CoreIO: write_file
 using .Sphere: sphere
 using .Hittable: HittableAbstract
-using .HittableList: hittable_list
+using .HittableList: hittable_list, push!, empty!
 const VERSION = v"0.1.0"
 
 

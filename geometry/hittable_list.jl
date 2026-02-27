@@ -2,41 +2,59 @@ module HittableList
 using ..CoreVec3: vec3, point3, dot
 using ..CoreRay: ray
 using ..Hittable: hit_record, HittableAbstract
+using ..Sphere: sphere
+using CUDA
 
-export hit, hittable_list
+import ..Sphere: hit
+import CUDA: cudaconvert
 
-Base.@kwdef mutable struct hittable_list <: HittableAbstract
+export hittable_list, hit, push!, empty!
 
-    objects::Vector{HittableAbstract} = Vector{HittableAbstract}()
+const HittableConcrete = Union{sphere}
 
+mutable struct hittable_list <: HittableAbstract
+    objects_gpu::CuArray{HittableConcrete, 1}
 end
 
-@inline function Base.push!(h::hittable_list, o::HittableAbstract)
-    push!(h.objects, o)
+struct hittable_list_device <: HittableAbstract
+    objects::CuDeviceVector{HittableConcrete, 1}
+end
+
+hittable_list() = hittable_list(CuArray{HittableConcrete, 1}())
+
+@inline function Base.push!(h::hittable_list, o::HittableConcrete)
+
+    new_objects = CuArray{HittableConcrete, 1}([Vector(h.objects_gpu); o])
+    h.objects_gpu = new_objects
+    return h
 end
 
 @inline function Base.empty!(h::hittable_list)
-    empty!(h.objects)
+    h.objects_gpu = CuArray{HittableConcrete, 1}()
+    return h
 end
 
-@inline function hit(hl::hittable_list, r::ray, ray_tmin, ray_tmax, rec::hit_record)
+
+@inline function CUDA.cudaconvert(hl::hittable_list)
+    return hittable_list_device(cudaconvert(hl.objects_gpu))
+end
+
+@inline function hit(hl::hittable_list_device, r::ray, ray_tmin, ray_tmax)::Tuple{Bool, hit_record}
     hit_anything::Bool = false
-    temp_rec::hit_record = hit_record()
+    rec::hit_record = hit_record()
     closest_so_far = ray_tmax
 
-    for object in hl.objects
-        if hit(object, r, ray_tmin, ray_tmax, rec)
+    for i in 1:length(hl.objects)
+        obj = hl.objects[i]
+        was_hit, temp_rec = hit(obj, r, ray_tmin, closest_so_far)
+        if was_hit
             hit_anything = true
-            closest_so_far = temp_hto.t
-            rec.point = temp_rec.point
-            rec.normal = temp_rec.normal
-            rec.t = temp_rec.t
-            rec.front_face = temp_rec.front_face
-            
+            closest_so_far = temp_rec.t
+            rec = temp_rec
         end
     end
 
-    return hit_anything
+    return (hit_anything, rec)
 end
 
 end

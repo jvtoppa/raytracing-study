@@ -6,8 +6,10 @@ using ..Camera: RayCamera, get_pixel_center
 using ..Kernel: render_kernel!
 using ..Hittable: HittableAbstract
 using ..Sphere: sphere
+using ..HittableList: hittable_list, hit, push!, empty!
 
-function precompile_kernel!(camera::RayCamera, dummy::HittableAbstract)  
+function precompile_kernel!(camera::RayCamera, dummy::T)  where {T<:HittableAbstract}
+    
     precompile_buf = CuArray{vec3}(undef, 1)
     @cuda threads=(32,16) blocks=(1,1) render_kernel!(
         precompile_buf, Int32(1), Int32(1), 
@@ -19,7 +21,7 @@ function precompile_kernel!(camera::RayCamera, dummy::HittableAbstract)
     
 end
 
-function render_image(camera::RayCamera, world::HittableAbstract, threads_x::Int32 = Int32(32), threads_y::Int32 = Int32(16), verbose::Bool = true)
+function render_image(camera::RayCamera, world::T, threads_x::Int32 = Int32(32), threads_y::Int32 = Int32(16), verbose::Bool = true) where {T<:HittableAbstract}
     if verbose
         println("Starting render...")
     end
@@ -29,8 +31,20 @@ function render_image(camera::RayCamera, world::HittableAbstract, threads_x::Int
     blocks_x = Int32(cld(camera.image_width, threads_x))
     blocks_y = Int32(cld(camera.image_height, threads_y))
     blocks = (blocks_x, blocks_y)
-    dummy::sphere = sphere(point3(0,0,0), 1.0f0)
+    dummy = world
+    
+    if T <: hittable_list
+        dummy = hittable_list() 
+        
+        push!(dummy, sphere(point3(0,0,0), 0.0001f0))
+    end
+    if verbose
+        println("Precompiling kernel...")
+    end
     precompile_kernel!(camera, dummy)
+    if verbose
+        println("Done. \nRendering kernel...")
+    end
     t_kernel = time()
 
     @cuda threads=threads blocks=blocks render_kernel!(
@@ -41,7 +55,7 @@ function render_image(camera::RayCamera, world::HittableAbstract, threads_x::Int
     kernel_time = time() - t_kernel
     
     if verbose
-        println("Kernel execution: $(round(kernel_time * 1000, digits=2)) ms")
+        println("Done. Kernel execution: $(round(kernel_time * 1000, digits=2)) ms")
     end
     framebuf_cpu = Array(framebuf)
 

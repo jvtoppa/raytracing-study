@@ -6,11 +6,11 @@ using ..CoreRay: ray
 using ..Sphere: hit, sphere
 using ..Hittable: hit_record, HittableAbstract
 
-@inline function ray_color(r::ray, world::HittableAbstract)
+@inline function ray_color(r::ray, world::T) where {T<:HittableAbstract}
     rec = hit_record()
-    
-    if hit(world, r, 0, typemax(Int32), rec)
-        return 0.5f0 * (rec.normal + color(1,1,1))
+    was_hit, rec = hit(world, r, 0f0, typemax(Int32))
+    if was_hit
+        return 0.5f0 * (rec.normal + color(1f0,1f0,1f0))
     end
     
     unit_direction = unit_vector(r.direction)
@@ -34,7 +34,7 @@ function render_kernel!(
     pixel_delta_u::vec3,
     pixel_delta_v::vec3,
     camera_center::vec3,
-    world::HittableAbstract)
+    world::T) where {T<:HittableAbstract}
     
     ix = (blockIdx().x - 1) * blockDim().x + threadIdx().x
     iy = (blockIdx().y - 1) * blockDim().y + threadIdx().y
